@@ -1,0 +1,34 @@
+[
+  {
+    "id": "sourdough",
+    "short": "Fermentação natural, casca crocante e miolo aerado.",
+    "name": "Sourdough Tradicional",
+    "imageKey": "sourdough",
+    "tag": "Fornada Limitada",
+    "desc": "Farinha nobre, água e sal. Fermentação natural de 36 horas para casca crocante e miolo aerado."
+  },
+  {
+    "id": "rustico",
+    "short": "Cebola roxa caramelizada e ervas frescas.",
+    "name": "Rústico de Cebola Roxa & Ervas",
+    "imageKey": "rustic",
+    "tag": "Fornada Limitada",
+    "desc": "Massa de levain recheada com cebola roxa caramelizada e ervas frescas do dia."
+  },
+  {
+    "id": "brioche",
+    "short": "Trança macia, dourada e amanteigada.",
+    "name": "Trança de Brioche",
+    "imageKey": "brioche",
+    "tag": "Sob Encomenda",
+    "desc": "Amanteigada e macia, com manteiga pura e ovos caipiras. Dourada no ponto certo."
+  },
+  {
+    "id": "folhados",
+    "short": "Croissants e folhados laminados à mão.",
+    "name": "Folhados Artesanais",
+    "imageKey": "folhados",
+    "tag": "Sob Encomenda",
+    "desc": "Croissants e folhados laminados à mão, em camadas finas de manteiga francesa."
+  }
+]
