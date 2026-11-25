@@ -1,11 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Wheat, Leaf, Clock, MapPin, CalendarDays, Instagram, MessageCircle, Menu, X, ArrowRight } from "lucide-react";
-import hero from "@/assets/hero-breads.jpg";
-import sourdough from "@/assets/sourdough.jpg";
-import rustic from "@/assets/rustic-onion.jpg";
-import brioche from "@/assets/brioche.jpg";
-import folhados from "@/assets/folhados.jpg";
+import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from "react";
+import { Wheat, Leaf, Clock, MapPin, CalendarDays, Instagram, MessageCircle, Menu, X, ArrowRight, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import hero from "./assets/hero-breads.jpg";
+import sourdough from "./assets/sourdough.jpg";
+import rustic from "./assets/rustic-onion.jpg";
+import brioche from "./assets/brioche.jpg";
+import folhados from "./assets/folhados.jpg";
 
 const PHONE = "5551982356921";
 const wa = (msg?: string) => `https://wa.me/${PHONE}${msg ? `?text=${encodeURIComponent(msg)}` : ""}`;
@@ -13,28 +12,15 @@ const WA_ORDER = wa("Olá! Vi o site da Coelho & Dockhorn e gostaria de fazer um
 const INSTAGRAM = "https://www.instagram.com/coelhodockhorn/";
 const MAPS = "https://www.google.com/maps/place/Coelho+%26+Dockhorn+Fine+Bakery/@-29.9195836,-51.1967257,17z";
 
-export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Coelho & Dockhorn Fine Bakery | Panificação Artesanal em Canoas" },
-      { name: "description", content: "Pães de fermentação natural, folhados e receitas autorais. Encontre-nos nas feiras de Canoas/RS ou encomende pelo WhatsApp." },
-      { property: "og:title", content: "Coelho & Dockhorn Fine Bakery" },
-      { property: "og:description", content: "Alta panificação artesanal da nossa bancada direto para a sua mesa." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
-  component: Index,
-});
-
 function Reveal({ children, delay = 0, className = "" }: { children: ReactNode; delay?: number; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || !("IntersectionObserver" in window)) return;
     const io = new IntersectionObserver(([e]) => {
       if (e?.isIntersecting) { el.classList.add("is-visible"); io.disconnect(); }
     }, { threshold: 0.15 });
+    el.classList.add("will-reveal");
     io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -58,16 +44,22 @@ const nav = [["Início", "#inicio"], ["Vitrine Artesanal", "#vitrine"], ["Agenda
 function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 20);
     on(); window.addEventListener("scroll", on, { passive: true });
     return () => window.removeEventListener("scroll", on);
   }, []);
   return (
-    <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${scrolled ? "border-b border-border bg-background/80 py-3 backdrop-blur-md" : "py-5"}`}>
+    <header onKeyDown={(event) => {
+      if (event.key === "Escape" && open) {
+        setOpen(false);
+        menuButton.current?.focus();
+      }
+    }} className={`site-header fixed inset-x-0 top-0 z-50 transition-all duration-500 ${scrolled ? "border-b border-border bg-background/80 py-3 backdrop-blur-md" : "py-5"}`}>
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 md:px-8">
         <Logo />
-        <nav className="hidden items-center gap-8 lg:flex">
+        <nav aria-label="Navegação principal" className="hidden items-center gap-8 lg:flex">
           {nav.map(([l, h]) => (
             <a key={h} href={h} className="group relative text-sm text-muted-foreground transition-colors hover:text-foreground">
               {l}<span className="absolute -bottom-1 left-0 h-px w-0 bg-primary transition-all duration-300 group-hover:w-full" />
@@ -75,10 +67,10 @@ function Header() {
           ))}
           <a href={WA_ORDER} target="_blank" rel="noreferrer" className="rounded-sm bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover">Encomendar</a>
         </nav>
-        <button aria-label="Menu" className="lg:hidden" onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
+        <button ref={menuButton} type="button" aria-label={open ? "Fechar menu" : "Abrir menu"} aria-expanded={open} aria-controls="mobile-nav" className="menu-button lg:hidden" onClick={() => setOpen(!open)}>{open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button>
       </div>
-      <div className={`overflow-hidden transition-all duration-500 lg:hidden ${open ? "max-h-96" : "max-h-0"}`}>
-        <nav className="mx-5 mt-3 flex flex-col gap-4 rounded-sm border border-border bg-background/95 p-6 backdrop-blur-md">
+      <div id="mobile-nav" hidden={!open} className="lg:hidden">
+        <nav aria-label="Navegação principal" className="mx-5 mt-3 flex flex-col gap-4 rounded-sm border border-border bg-background/95 p-6 backdrop-blur-md">
           {nav.map(([l, h]) => <a key={h} href={h} onClick={() => setOpen(false)} className="font-serif text-xl">{l}</a>)}
           <a href={WA_ORDER} target="_blank" rel="noreferrer" className={btnGold}>Encomendar</a>
         </nav>
@@ -89,7 +81,7 @@ function Header() {
 
 function Hero() {
   return (
-    <section id="inicio" className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-28">
+    <section id="inicio" className="hero relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24">
       <div className="pointer-events-none absolute -right-40 top-20 h-[30rem] w-[30rem] rounded-full bg-primary/10 blur-3xl" />
       <div className="mx-auto grid max-w-7xl items-center gap-14 px-5 md:px-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
@@ -97,24 +89,20 @@ function Hero() {
             <span className="h-px w-10 bg-primary" />PANIFICAÇÃO ARTESANAL &amp; EMPÓRIO GOURMET
           </p>
           <h1 className="animate-fade-up mt-6 font-serif text-4xl leading-[1.08] font-medium sm:text-5xl lg:text-[4.2rem]" style={{ animationDelay: "150ms" }}>
-            O sabor da alta panificação artesanal, <em className="text-gold-gradient">da nossa bancada</em> direto para a sua mesa.
+            Pães artesanais <em>feitos com tempo.</em>
           </h1>
           <p className="animate-fade-up mt-6 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg" style={{ animationDelay: "300ms" }}>
-            Pães de fermentação natural, folhados e receitas autorais feitos à mão. Encontre-nos nas melhores feiras da região ou garanta sua fornada sob encomenda.
+            Pães de fermentação natural, folhados e receitas autorais feitos à mão. Estamos nas feiras de Canoas e recebemos encomendas pelo WhatsApp.
           </p>
           <div className="animate-fade-up mt-10 flex flex-col gap-4 sm:flex-row" style={{ animationDelay: "450ms" }}>
-            <a href="#agenda" className={btnGold}>Ver Agenda das Feiras <ArrowRight className="h-4 w-4" /></a>
-            <a href={WA_ORDER} target="_blank" rel="noreferrer" className={btnOutline}><MessageCircle className="h-4 w-4" /> Fazer Encomenda no WhatsApp</a>
+            <a href="#vitrine" className={btnGold}>Ver produtos <ArrowRight className="h-4 w-4" /></a>
+            <a href={WA_ORDER} target="_blank" rel="noreferrer" className={btnOutline}><MessageCircle className="h-4 w-4" /> Encomendar pelo WhatsApp</a>
           </div>
         </div>
         <div className="animate-fade-up relative mx-auto w-full max-w-md lg:max-w-none" style={{ animationDelay: "250ms" }}>
           <div className="absolute -inset-4 translate-x-3 translate-y-3 rounded-t-full border border-primary/60 md:-inset-5" />
           <div className="relative overflow-hidden rounded-t-full shadow-2xl">
-            <img src={hero} alt="Pães de fermentação natural e croissants recém-saídos do forno" width={1024} height={1280} className="animate-slow-zoom aspect-[4/5] w-full object-cover" />
-          </div>
-          <div className="animate-float absolute -bottom-6 -left-4 rounded-sm border border-border bg-background/95 px-5 py-4 shadow-xl backdrop-blur md:-left-10">
-            <p className="font-serif text-3xl text-primary-hover">100%</p>
-            <p className="text-xs tracking-widest text-muted-foreground">FEITO À MÃO</p>
+            <img src={hero} alt="Pães de fermentação natural e croissants recém-saídos do forno" width={1024} height={1280} fetchPriority="high" className="animate-slow-zoom aspect-[4/5] w-full object-cover" />
           </div>
         </div>
       </div>
@@ -122,16 +110,102 @@ function Hero() {
   );
 }
 
-function Marquee() {
-  const items = ["Fermentação Natural", "Folhados Artesanais", "Brioches", "Empório Gourmet", "Sob Encomenda", "Feiras de Canoas"];
+function ProductCarousel() {
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const active = produtos[index];
+  const isPlaying = !paused && !hovered && !focused && !reducedMotion;
+
+  useEffect(() => {
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(preference.matches);
+    update();
+    preference.addEventListener("change", update);
+    return () => preference.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    let timer: number | undefined;
+    function schedule() {
+      window.clearTimeout(timer);
+      if (!document.hidden) timer = window.setTimeout(() => {
+        setIndex((current) => (current + 1) % produtos.length);
+      }, 6700);
+    }
+    schedule();
+    document.addEventListener("visibilitychange", schedule);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", schedule);
+    };
+  }, [index, isPlaying]);
+
+  function move(delta: number) {
+    setIndex((current) => (current + delta + produtos.length) % produtos.length);
+  }
+
+  function handleTouchEnd(event: TouchEvent<HTMLElement>) {
+    const start = touchStart.current;
+    touchStart.current = null;
+    const touch = event.changedTouches[0];
+    if (!start || !touch) return;
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) move(dx < 0 ? 1 : -1);
+  }
+
   return (
-    <div className="overflow-hidden border-y border-border bg-espresso py-5 text-espresso-foreground">
-      <div className="animate-marquee flex w-max gap-12 whitespace-nowrap font-serif text-xl italic md:text-2xl">
-        {[...items, ...items, ...items, ...items].map((t, i) => (
-          <span key={i} className="flex items-center gap-12">{t}<Wheat className="h-4 w-4 text-primary" /></span>
-        ))}
+    <section className="product-carousel bg-espresso text-espresso-foreground"
+      aria-label="Destaques da vitrine" aria-roledescription="carrossel"
+      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}
+      onTouchStart={(event) => {
+        const touch = event.touches[0];
+        if (touch) touchStart.current = { x: touch.clientX, y: touch.clientY };
+      }}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={() => { touchStart.current = null; }}
+      onKeyDown={(event) => {
+        if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+          event.preventDefault();
+          move(event.key === "ArrowLeft" ? -1 : 1);
+        }
+      }}>
+      <div className="carousel-inner mx-auto max-w-7xl px-5 md:px-8">
+        <div className="carousel-label"><Wheat size={17} aria-hidden="true" /> Na vitrine</div>
+        <div className="carousel-window" aria-live={isPlaying ? "off" : "polite"} aria-atomic="true">
+          <a className="carousel-slide" href={`#${active.id}`}>
+            <img key={active.id} src={active.img} width={56} height={56} alt="" />
+            <span key={active.id + "-caption"} className="carousel-caption">
+              <span className="carousel-name">{active.name}</span>
+              <span className="carousel-summary">{active.short}</span>
+            </span>
+            <ArrowRight className="carousel-link-arrow" size={18} aria-hidden="true" />
+          </a>
+        </div>
+        <div className="carousel-controls" role="group" aria-label="Controles do carrossel">
+          <button type="button" aria-label="Produto anterior" onClick={() => move(-1)}><ChevronLeft size={19} aria-hidden="true" /></button>
+          <div className="carousel-dots" role="group" aria-label="Selecionar produto">
+            {produtos.map((product, position) => (
+              <button key={product.id} className="carousel-dot" type="button" aria-label={product.name}
+                aria-current={position === index ? "true" : undefined} onClick={() => setIndex(position)}><span /></button>
+            ))}
+          </div>
+          <button type="button" aria-label="Próximo produto" onClick={() => move(1)}><ChevronRight size={19} aria-hidden="true" /></button>
+          {!reducedMotion && (
+            <button type="button" aria-label={paused ? "Retomar rotação automática" : "Pausar rotação automática"} onClick={() => setPaused(!paused)}>
+              {paused ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}
+            </button>
+          )}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -156,7 +230,7 @@ function Agenda() {
   return (
     <section id="agenda" className="bg-secondary py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
-        <SectionTitle kicker="AGENDA DAS FEIRAS" title="Onde nos Encontrar Esta Semana" sub="Visite nossa bancada, experimente nossos produtos frescos e leve para casa." />
+        <SectionTitle kicker="AGENDA DAS FEIRAS" title="Encontre a padaria nas feiras" sub="Confirme os horários e locais pelo Instagram antes de sair." />
         <div className="mt-16 grid gap-6 md:grid-cols-3">
           {feiras.map((f, i) => (
             <Reveal key={f.name} delay={i * 150}>
@@ -182,10 +256,10 @@ function Agenda() {
 }
 
 const produtos = [
-  { name: "Sourdough Tradicional", img: sourdough, tag: "Fornada Limitada", desc: "Farinha nobre, água e sal. Fermentação natural de 36 horas para casca crocante e miolo aerado." },
-  { name: "Rústico de Cebola Roxa & Ervas", img: rustic, tag: "Fornada Limitada", desc: "Massa de levain recheada com cebola roxa caramelizada e ervas frescas do dia." },
-  { name: "Trança de Brioche", img: brioche, tag: "Sob Encomenda", desc: "Amanteigada e macia, com manteiga pura e ovos caipiras. Dourada no ponto certo." },
-  { name: "Folhados Artesanais", img: folhados, tag: "Sob Encomenda", desc: "Croissants e folhados laminados à mão, em camadas finas de manteiga francesa." },
+  { id: "sourdough", short: "Fermentação natural, casca crocante e miolo aerado.", name: "Sourdough Tradicional", img: sourdough, tag: "Fornada Limitada", desc: "Farinha nobre, água e sal. Fermentação natural de 36 horas para casca crocante e miolo aerado." },
+  { id: "rustico", short: "Cebola roxa caramelizada e ervas frescas.", name: "Rústico de Cebola Roxa & Ervas", img: rustic, tag: "Fornada Limitada", desc: "Massa de levain recheada com cebola roxa caramelizada e ervas frescas do dia." },
+  { id: "brioche", short: "Trança macia, dourada e amanteigada.", name: "Trança de Brioche", img: brioche, tag: "Sob Encomenda", desc: "Amanteigada e macia, com manteiga pura e ovos caipiras. Dourada no ponto certo." },
+  { id: "folhados", short: "Croissants e folhados laminados à mão.", name: "Folhados Artesanais", img: folhados, tag: "Sob Encomenda", desc: "Croissants e folhados laminados à mão, em camadas finas de manteiga francesa." },
 ];
 
 function Vitrine() {
@@ -196,7 +270,7 @@ function Vitrine() {
         <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {produtos.map((p, i) => (
             <Reveal key={p.name} delay={i * 120}>
-              <article className="group flex h-full flex-col">
+              <article id={p.id} className="product-card group flex h-full flex-col">
                 <div className="relative overflow-hidden rounded-t-full border border-border">
                   <img src={p.img} alt={p.name} loading="lazy" width={816} height={816} className="aspect-[4/5] w-full object-cover transition-transform duration-[1.2s] ease-out group-hover:scale-110" />
                   <span className="absolute bottom-4 left-4 rounded-sm bg-background/90 px-3 py-1 text-[0.65rem] font-medium tracking-[0.2em] text-primary-hover backdrop-blur">{p.tag.toUpperCase()}</span>
@@ -284,20 +358,23 @@ function Footer() {
   );
 }
 
-function Index() {
+export default function Index() {
   return (
-    <main className="bg-background text-foreground">
+    <div className="bg-background text-foreground">
+      <a className="skip-link" href="#conteudo">Ir para o conteúdo</a>
       <Header />
+      <main id="conteudo">
       <Hero />
-      <Marquee />
-      <Agenda />
+      <ProductCarousel />
       <Vitrine />
+      <Agenda />
       <Diferenciais />
       <CTA />
+      </main>
       <Footer />
       <a href={WA_ORDER} target="_blank" rel="noreferrer" aria-label="WhatsApp" className="animate-pulse-ring fixed right-5 bottom-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl transition-transform hover:scale-110">
         <MessageCircle className="h-6 w-6" />
       </a>
-    </main>
+    </div>
   );
 }
