@@ -5,6 +5,7 @@ import sourdough from "./assets/sourdough.jpg";
 import rustic from "./assets/rustic-onion.jpg";
 import brioche from "./assets/brioche.jpg";
 import folhados from "./assets/folhados.jpg";
+import initialCatalog from "./catalog.json";
 
 const PHONE = "5551982356921";
 const wa = (msg?: string) => `https://wa.me/${PHONE}${msg ? `?text=${encodeURIComponent(msg)}` : ""}`;
@@ -110,14 +111,15 @@ function Hero() {
   );
 }
 
-function ProductCarousel() {
+function ProductCarousel({ produtos }: { produtos: Product[] }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
-  const active = produtos[index];
+  const activeIndex = index % produtos.length;
+  const active = produtos[activeIndex];
   const isPlaying = !paused && !hovered && !focused && !reducedMotion;
 
   useEffect(() => {
@@ -143,7 +145,7 @@ function ProductCarousel() {
       window.clearTimeout(timer);
       document.removeEventListener("visibilitychange", schedule);
     };
-  }, [index, isPlaying]);
+  }, [index, isPlaying, produtos.length]);
 
   function move(delta: number) {
     setIndex((current) => (current + delta + produtos.length) % produtos.length);
@@ -194,7 +196,7 @@ function ProductCarousel() {
           <div className="carousel-dots" role="group" aria-label="Selecionar produto">
             {produtos.map((product, position) => (
               <button key={product.id} className="carousel-dot" type="button" aria-label={product.name}
-                aria-current={position === index ? "true" : undefined} onClick={() => setIndex(position)}><span /></button>
+                aria-current={position === activeIndex ? "true" : undefined} onClick={() => setIndex(position)}><span /></button>
             ))}
           </div>
           <button type="button" aria-label="Próximo produto" onClick={() => move(1)}><ChevronRight size={19} aria-hidden="true" /></button>
@@ -255,18 +257,21 @@ function Agenda() {
   );
 }
 
-const produtos = [
-  { id: "sourdough", short: "Fermentação natural, casca crocante e miolo aerado.", name: "Sourdough Tradicional", img: sourdough, tag: "Fornada Limitada", desc: "Farinha nobre, água e sal. Fermentação natural de 36 horas para casca crocante e miolo aerado." },
-  { id: "rustico", short: "Cebola roxa caramelizada e ervas frescas.", name: "Rústico de Cebola Roxa & Ervas", img: rustic, tag: "Fornada Limitada", desc: "Massa de levain recheada com cebola roxa caramelizada e ervas frescas do dia." },
-  { id: "brioche", short: "Trança macia, dourada e amanteigada.", name: "Trança de Brioche", img: brioche, tag: "Sob Encomenda", desc: "Amanteigada e macia, com manteiga pura e ovos caipiras. Dourada no ponto certo." },
-  { id: "folhados", short: "Croissants e folhados laminados à mão.", name: "Folhados Artesanais", img: folhados, tag: "Sob Encomenda", desc: "Croissants e folhados laminados à mão, em camadas finas de manteiga francesa." },
-];
+const productImages: Record<string, string> = { sourdough, rustic, brioche, folhados };
+type Product = (typeof initialCatalog)[number] & { img: string };
 
-function Vitrine() {
+function withProductImages(items: typeof initialCatalog): Product[] {
+  return items.map((item) => ({ ...item, img: productImages[item.imageKey] ?? hero }));
+}
+
+const fallbackProducts = withProductImages(initialCatalog);
+
+function Vitrine({ produtos }: { produtos: Product[] }) {
   return (
     <section id="vitrine" className="py-24 md:py-32">
       <div className="mx-auto max-w-7xl px-5 md:px-8">
         <SectionTitle kicker="VITRINE ARTESANAL" title="Nossas Criações Artesanais" sub="Receitas autorais produzidas em pequenos lotes, com tempo e respeito ao processo." />
+        {produtos.length === 0 && <p className="mt-8 text-center text-muted-foreground">Consulte a próxima fornada pelo WhatsApp.</p>}
         <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {produtos.map((p, i) => (
             <Reveal key={p.name} delay={i * 120}>
@@ -359,14 +364,36 @@ function Footer() {
 }
 
 export default function Index() {
+  const [produtos, setProdutos] = useState(fallbackProducts);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadCatalog() {
+      try {
+        const response = await fetch("/api/catalog", { signal: controller.signal });
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (Array.isArray(payload.products) && !controller.signal.aborted) {
+          setProdutos(withProductImages(payload.products));
+        }
+      } catch {
+        // The built-in catalog keeps the site usable during a temporary outage.
+      }
+    }
+
+    void loadCatalog();
+    return () => controller.abort();
+  }, []);
+
   return (
     <div className="bg-background text-foreground">
       <a className="skip-link" href="#conteudo">Ir para o conteúdo</a>
       <Header />
       <main id="conteudo">
       <Hero />
-      <ProductCarousel />
-      <Vitrine />
+      {produtos.length > 0 && <ProductCarousel produtos={produtos} />}
+      <Vitrine produtos={produtos} />
       <Agenda />
       <Diferenciais />
       <CTA />
